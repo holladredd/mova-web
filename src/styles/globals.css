@@ -2,17 +2,25 @@
 
 @theme {
   --color-gold: #D4AF37;
-  --color-gold-hover: #C5A059;
+  --color-gold-dark: #C5A059;
   --color-charcoal: #0F172A;
-  --color-charcoal-light: #1E293B;
-  
+  --color-charcoal-mid: #1E293B;
+  --color-surface-light: #FFFFFF;
+  --color-surface-dark: #1A1A1A;
+  --color-bg-light: #F8F9FA;
+  --color-bg-dark: #050505;
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
-body {
-  @apply bg-zinc-50 text-slate-900 transition-colors duration-300;
+* {
+  box-sizing: border-box;
 }
 
-.dark body {
-  @apply bg-[#050505] text-white;
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
 }
