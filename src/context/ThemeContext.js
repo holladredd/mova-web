@@ -10,7 +10,7 @@ export function ThemeProvider({ children }) {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDarkMode(prefersDark);
     if (prefersDark) {
-      document.body.classList.add('dark-mode');
+      document.documentElement.classList.add('dark');
     }
   }, []);
 
@@ -18,9 +18,9 @@ export function ThemeProvider({ children }) {
     setIsDarkMode((prev) => {
       const newMode = !prev;
       if (newMode) {
-        document.body.classList.add('dark-mode');
+        document.documentElement.classList.add('dark');
       } else {
-        document.body.classList.remove('dark-mode');
+        document.documentElement.classList.remove('dark');
       }
       return newMode;
     });
