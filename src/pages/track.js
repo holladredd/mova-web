@@ -4,20 +4,14 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 
-const TIMELINE = [
-  { label: 'Order Placed', time: '10:02 AM', desc: 'Your delivery request was received', done: true, icon: '📋' },
-  { label: 'Rider Assigned', time: '10:08 AM', desc: 'Emeka A. accepted your order', done: true, icon: '🏍️' },
-  { label: 'Picked Up', time: '10:25 AM', desc: 'Package collected from Victoria Island', done: true, icon: '📦' },
-  { label: 'In Transit', time: '10:32 AM', desc: 'Rider is heading to your destination', done: true, icon: '🚀' },
-  { label: 'Arriving Soon', time: '~10:47 AM', desc: 'Estimated 15 minutes away', done: false, icon: '📍' },
-  { label: 'Delivered', time: '--', desc: 'Package will be delivered to your address', done: false, icon: '✅' },
-];
+import { MOCK_DELIVERIES, MOCK_RIDERS } from '../data';
 
 export default function TrackPage() {
   const router = useRouter();
   const [trackingId, setTrackingId] = useState('');
   const [tracking, setTracking] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deliveryData, setDeliveryData] = useState(null);
 
   useEffect(() => {
     if (router.query.id) {
@@ -31,7 +25,14 @@ export default function TrackPage() {
     if (!trackingId.trim()) return;
     setLoading(true);
     await new Promise(r => setTimeout(r, 1000));
-    setTracking(true);
+    const delivery = MOCK_DELIVERIES.find(d => d.trackingId === trackingId.trim());
+    if (delivery) {
+      setDeliveryData(delivery);
+      setTracking(true);
+    } else {
+      alert('Tracking ID not found');
+      setTracking(false);
+    }
     setLoading(false);
   };
 
@@ -74,7 +75,7 @@ export default function TrackPage() {
             </div>
           </form>
 
-          {tracking && (
+          {tracking && deliveryData && (
             <div className="grid lg:grid-cols-5 gap-6">
               {/* Map placeholder */}
               <div className="lg:col-span-3 space-y-4">
@@ -89,13 +90,13 @@ export default function TrackPage() {
                   </div>
                   <div className="absolute top-4 right-4 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    In Transit
+                    {deliveryData.status.replace('_', ' ')}
                   </div>
                   <div className="absolute bottom-4 left-4 right-4 bg-white/10 backdrop-blur-sm rounded-xl p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-white text-xs font-semibold">From: Victoria Island</p>
-                        <p className="text-white/60 text-xs">To: Lekki Phase 1</p>
+                        <p className="text-white text-xs font-semibold">From: {deliveryData.pickupAddress.split(',')[0]}</p>
+                        <p className="text-white/60 text-xs">To: {deliveryData.dropoffAddress.split(',')[0]}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[#D4AF37] text-sm font-black">~15 min</p>
@@ -106,42 +107,52 @@ export default function TrackPage() {
                 </div>
 
                 {/* Rider Info */}
-                <div className="bg-white dark:bg-[#1A1A1A] border border-slate-100 dark:border-white/5 rounded-2xl p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-[#0F172A] dark:bg-white flex items-center justify-center text-white dark:text-[#0F172A] font-black text-xl">E</div>
-                    <div className="flex-1">
-                      <p className="font-bold">Emeka A.</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-[#D4AF37]">⭐ 4.9</span>
-                        <span className="text-slate-300 dark:text-white/20">·</span>
-                        <span className="text-xs text-slate-500">Kawasaki Bike</span>
-                        <span className="text-slate-300 dark:text-white/20">·</span>
-                        <span className="text-xs text-slate-500">LGA-4821-BD</span>
+                {deliveryData.riderId ? (() => {
+                  const rider = MOCK_RIDERS.find(r => r.id === deliveryData.riderId);
+                  if (!rider) return null;
+                  return (
+                    <div className="bg-white dark:bg-[#1A1A1A] border border-slate-100 dark:border-white/5 rounded-2xl p-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-[#0F172A] dark:bg-white flex items-center justify-center text-white dark:text-[#0F172A] font-black text-xl">{rider.avatar}</div>
+                        <div className="flex-1">
+                          <p className="font-bold">{rider.firstName} {rider.lastName}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-[#D4AF37]">⭐ {rider.rating}</span>
+                            <span className="text-slate-300 dark:text-white/20">·</span>
+                            <span className="text-xs text-slate-500">{rider.vehicle.make} {rider.vehicle.type}</span>
+                            <span className="text-slate-300 dark:text-white/20">·</span>
+                            <span className="text-xs text-slate-500">{rider.vehicle.plateNumber}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button id="call-rider-btn" className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white hover:bg-green-600 transition-colors">
+                            📞
+                          </button>
+                          <button id="message-rider-btn" className="w-10 h-10 rounded-full bg-[#0F172A] dark:bg-white flex items-center justify-center text-white dark:text-[#0F172A] hover:opacity-80 transition-opacity">
+                            💬
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button id="call-rider-btn" className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white hover:bg-green-600 transition-colors">
-                        📞
-                      </button>
-                      <button id="message-rider-btn" className="w-10 h-10 rounded-full bg-[#0F172A] dark:bg-white flex items-center justify-center text-white dark:text-[#0F172A] hover:opacity-80 transition-opacity">
-                        💬
-                      </button>
-                    </div>
+                  );
+                })() : (
+                  <div className="bg-white dark:bg-[#1A1A1A] border border-slate-100 dark:border-white/5 rounded-2xl p-5 text-center">
+                    <p className="text-sm text-slate-500">Searching for nearest available rider...</p>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Timeline */}
               <div className="lg:col-span-2">
                 <div className="bg-white dark:bg-[#1A1A1A] border border-slate-100 dark:border-white/5 rounded-3xl p-6 h-full">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="font-bold">{trackingId}</h2>
-                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full">In Transit</span>
+                    <h2 className="font-bold">{deliveryData.trackingId}</h2>
+                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full">{deliveryData.status.replace('_', ' ')}</span>
                   </div>
                   <div className="space-y-0">
-                    {TIMELINE.map((step, i) => {
-                      const isLast = i === TIMELINE.length - 1;
-                      const isActive = step.done && (i === TIMELINE.length - 1 || !TIMELINE[i + 1].done);
+                    {deliveryData.events.map((step, i) => {
+                      const isLast = i === deliveryData.events.length - 1;
+                      const isActive = step.done && (i === deliveryData.events.length - 1 || !deliveryData.events[i + 1].done);
                       return (
                         <div key={step.label} className="flex gap-3">
                           <div className="flex flex-col items-center">

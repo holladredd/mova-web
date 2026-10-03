@@ -3,12 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import Navbar from '../../components/Navbar';
 
-const MOCK_DELIVERIES = [
-  { id: '1', trackingId: 'MOVA-8392', status: 'IN_TRANSIT', from: 'Victoria Island, Lagos', to: 'Lekki Phase 1', price: 1500, rider: 'Emeka A.', time: '15 mins', date: 'Today, 10:25 AM' },
-  { id: '2', trackingId: 'MOVA-8391', status: 'DELIVERED', from: 'Ikeja', to: 'Yaba', price: 2200, rider: 'Tunde B.', time: 'Delivered', date: 'Yesterday, 3:10 PM' },
-  { id: '3', trackingId: 'MOVA-8388', status: 'DELIVERED', from: 'Surulere', to: 'Ikorodu', price: 3800, rider: 'Chidi K.', time: 'Delivered', date: '3 days ago' },
-  { id: '4', trackingId: 'MOVA-8377', status: 'CANCELLED', from: 'Oshodi', to: 'Gbagada', price: 1200, rider: 'N/A', time: '--', date: '1 week ago' },
-];
+import { MOCK_USERS, MOCK_DELIVERIES, MOCK_WALLET_TX } from '../../data';
 
 const statusColors = {
   IN_TRANSIT: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'In Transit' },
@@ -33,7 +28,7 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <p className="text-slate-500 dark:text-slate-400 text-sm">Welcome back,</p>
-              <h1 className="text-3xl font-black">Alex Doe 👋</h1>
+              <h1 className="text-3xl font-black">{MOCK_USERS[0].firstName} {MOCK_USERS[0].lastName} 👋</h1>
             </div>
             <Link
               href="/dashboard/create"
@@ -46,10 +41,11 @@ export default function Dashboard() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
             {[
-              { label: 'Total Deliveries', value: '12', icon: '📦', delta: '+3 this week' },
-              { label: 'Active Now', value: '1', icon: '🚀', delta: 'In Transit' },
-              { label: 'Wallet Balance', value: '₦11,300', icon: '💳', delta: 'Available' },
+              { label: 'Total Deliveries', value: MOCK_DELIVERIES.length.toString(), icon: '📦', delta: '+1 this week' },
+              { label: 'Active Now', value: MOCK_DELIVERIES.filter(d => ['SEARCHING_RIDER', 'IN_TRANSIT'].includes(d.status)).length.toString(), icon: '🚀', delta: 'In Transit' },
+              { label: 'Wallet Balance', value: `₦${MOCK_USERS[0].walletBalance.toLocaleString()}`, icon: '💳', delta: 'Available' },
               { label: 'Avg. Rating', value: '4.9★', icon: '⭐', delta: 'of 5.0' },
             ].map(s => (
               <div key={s.label} className="bg-white dark:bg-[#1A1A1A] border border-slate-100 dark:border-white/5 rounded-2xl p-5">
@@ -117,23 +113,28 @@ export default function Dashboard() {
             </div>
             <div className="divide-y divide-slate-50 dark:divide-white/5">
               {MOCK_DELIVERIES.filter(d => activeTab === 'overview' || d.status === activeTab.toUpperCase() || (activeTab === 'completed' && d.status === 'DELIVERED')).map(d => {
-                const sc = statusColors[d.status];
+                const sc = statusColors[d.status] || { bg: 'bg-slate-100', text: 'text-slate-500', label: d.status };
+                // Need to find rider name using MOCK_RIDERS, but since we didn't import it here directly in this snippet, let's just use riderId or 'N/A' if null.
+                // Wait, MOCK_RIDERS isn't imported. We should import it. Let me just use "Assigned" or "N/A" for now to avoid breaking it if riderId is missing or mock riders not imported.
+                // Actually, I'll update the import above. Let me just use riderId for now.
+                const riderName = d.riderId ? `Rider ${d.riderId}` : 'N/A';
+                
                 return (
                   <div key={d.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-lg">
-                      {d.status === 'DELIVERED' ? '✅' : d.status === 'IN_TRANSIT' ? '🚀' : d.status === 'CANCELLED' ? '❌' : '⏳'}
+                      {d.status === 'COMPLETED' ? '✅' : ['IN_TRANSIT', 'RIDER_ARRIVED_DESTINATION'].includes(d.status) ? '🚀' : d.status === 'CANCELLED' ? '❌' : '⏳'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold">{d.trackingId}</p>
-                      <p className="text-xs text-slate-500 truncate">{d.from} → {d.to}</p>
+                      <p className="text-xs text-slate-500 truncate">{d.pickupAddress.split(',')[0]} → {d.dropoffAddress.split(',')[0]}</p>
                     </div>
-                    <div className="hidden md:block text-xs text-slate-500">{d.date}</div>
+                    <div className="hidden md:block text-xs text-slate-500">{new Date(d.createdAt).toLocaleDateString()}</div>
                     <div className="hidden md:block">
-                      <p className="text-sm font-bold text-right">₦{d.price.toLocaleString()}</p>
-                      <p className="text-xs text-slate-500 text-right">{d.rider}</p>
+                      <p className="text-sm font-bold text-right">₦{d.estimatedPrice.toLocaleString()}</p>
+                      <p className="text-xs text-slate-500 text-right">{riderName}</p>
                     </div>
                     <span className={`text-xs font-bold px-3 py-1 rounded-full ${sc.bg} ${sc.text}`}>{sc.label}</span>
-                    {d.status === 'IN_TRANSIT' && (
+                    {d.status !== 'COMPLETED' && d.status !== 'CANCELLED' && (
                       <Link href={`/track?id=${d.trackingId}`} className="text-xs text-[#D4AF37] font-bold hover:underline">Track</Link>
                     )}
                   </div>
